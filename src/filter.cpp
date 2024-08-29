@@ -53,7 +53,7 @@ bool is_equal(const helper& a, const helper& b) {
 
 bool is_rectangle(const helper& auditable, 
 		   const std::vector<helper> collection, 
-		   cv::Mat& img) {
+		   const cv::Mat& img) {
 
 	for each (auto current in collection)
 	{
@@ -79,7 +79,7 @@ bool is_rectangle(const helper& auditable,
 }
 
 
-bool contains_rectangle(cv::Mat& img) {
+bool contains_rectangle(const cv::Mat& img) {
 	
 	auto lines = std::map<int, std::vector<helper>>();
 
