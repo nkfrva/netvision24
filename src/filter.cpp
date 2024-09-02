@@ -1,11 +1,10 @@
 #include "filter.h"
 #include <vector>
 
-const int MIN_COUNT_PIXELS_BY_X = 30;
-const int MIN_COUNT_PIXELS_BY_Y = 15;
+constexpr int MIN_COUNT_PIXELS_BY_X = 30;
+constexpr int MIN_COUNT_PIXELS_BY_Y = 15;
 
 struct helper {
-public:
 	int len;
 	int start;
 	int row;
@@ -18,6 +17,44 @@ public:
 		this->pixel = pixel;
 	}
 };
+
+bool operator==(const helper& lhs, const helper& rhs) {
+	return lhs.len == rhs.len &&
+		lhs.start == rhs.start &&
+		lhs.pixel == rhs.pixel &&
+		std::abs(lhs.row - rhs.row) > MIN_COUNT_PIXELS_BY_Y;
+}
+bool operator!=(const helper& lhs, const helper& rhs) {
+	return !(lhs == rhs);
+}
+
+
+bool is_rectangle(const helper& auditable,
+	const std::vector<helper>& collection,
+	const cv::Mat& img) {
+
+	for each (auto current in collection)
+	{
+		if (auditable != current)
+			continue;
+
+		auto start = std::min(auditable.row, current.row);
+		auto end = std::max(auditable.row, current.row);
+
+		bool flag = true;
+		for (auto i = start; i < end; i++) {
+			if ((img.at<cv::Vec3b>(i, auditable.start) != auditable.pixel) &&
+				(img.at<cv::Vec3b>(i, auditable.start + auditable.len) != auditable.pixel)) {
+				flag = false;
+				break;
+			}
+		}
+		if (flag)
+			return true;
+	}
+
+	return false;
+}
 
 
 cv::MatIterator_<cv::Vec3b> find_lines(const int row, 
@@ -43,44 +80,7 @@ cv::MatIterator_<cv::Vec3b> find_lines(const int row,
 }
 
 
-bool is_equal(const helper& a, const helper& b) {
-	return a.len == b.len && 
-		a.start == b.start && 
-		a.pixel == b.pixel &&
-		std::abs(a.row - b.row) > MIN_COUNT_PIXELS_BY_Y;
-}
-
-
-bool is_rectangle(const helper& auditable, 
-		   const std::vector<helper> collection, 
-		   const cv::Mat& img) {
-
-	for each (auto current in collection)
-	{
-		if (!is_equal(auditable, current))
-			continue;
-
-		auto start = std::min(auditable.row, current.row);
-		auto end = std::max(auditable.row, current.row);
-
-		bool flag = true;
-		for (auto i = start; i < end; i++) {
-			if ((img.at<cv::Vec3b>(i, auditable.start) != auditable.pixel) &&
-				(img.at<cv::Vec3b>(i, auditable.start + auditable.len) != auditable.pixel)) {
-				flag = false;
-				break;
-			}				
-		}
-		if(flag)
-			return true;
-	}
-
-	return false;
-}
-
-
-bool contains_rectangle(const cv::Mat& img) {
-	
+std::map<int, std::vector<helper>> find_lines(const cv::Mat& img) {
 	auto lines = std::map<int, std::vector<helper>>();
 
 	for (auto row = 0; row < img.rows - 1; row++) {
@@ -92,6 +92,13 @@ bool contains_rectangle(const cv::Mat& img) {
 			pointer = find_lines(row, cbegin, pointer, current_rows.end<cv::Vec3b>(), lines);
 		}
 	}
+	return lines;
+}
+
+
+
+bool contains_rectangle(const cv::Mat& img) {
+	auto lines = find_lines(img);
 
 	for each (auto pair in lines)
 	{		
